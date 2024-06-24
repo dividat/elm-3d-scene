@@ -1122,8 +1122,8 @@ outsideStencil =
         , zpass = StencilTest.keep
         , writeMask = 0
         }
+    , defaultBlend
     ]
-        ++ commonSettings
 
 
 insideStencil : Int -> List WebGL.Settings.Setting
@@ -1138,8 +1138,8 @@ insideStencil lightMask =
         , zpass = StencilTest.keep
         , writeMask = 0
         }
+    , defaultBlend
     ]
-        ++ commonSettings
 
 
 createShadowStencil : List WebGL.Settings.Setting
