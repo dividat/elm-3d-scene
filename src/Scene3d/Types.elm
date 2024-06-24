@@ -79,19 +79,30 @@ type alias VertexWithTangent =
     { position : Vec3
     , normal : Vec3
     , uv : Vec2
-    , tangent : Vec3
+    , tangent : Vec4
     }
 
 
 type Material coordinates attributes
-    = UnlitMaterial TextureMap (Texture Vec3)
+    = UnlitMaterial TextureMap (Texture Vec4)
     | EmissiveMaterial TextureMap (Texture (LinearRgb Unitless)) Luminance
-    | LambertianMaterial TextureMap (Texture (LinearRgb Unitless)) (Texture NormalMap)
-    | PbrMaterial TextureMap (Texture (LinearRgb Unitless)) (Texture Float) (Texture Float) (Texture NormalMap)
+    | LambertianMaterial TextureMap (Texture (LinearRgb Unitless)) (Texture Float) NormalMap
+    | PbrMaterial TextureMap (Texture (LinearRgb Unitless)) (Texture Float) (Texture Float) (Texture Float) NormalMap
 
 
 type NormalMap
-    = VerticalNormal
+    = NoNormalMap
+    | NormalMap
+        { url : String
+        , options : WebGL.Texture.Options
+        , data : WebGL.Texture.Texture
+        , format : NormalMapFormat
+        }
+
+
+type NormalMapFormat
+    = OpenglFormat
+    | DirectxFormat
 
 
 type Texture value
@@ -100,6 +111,7 @@ type Texture value
         { url : String
         , options : WebGL.Texture.Options
         , data : WebGL.Texture.Texture
+        -- TODO: transparency here
         }
 
 
@@ -124,7 +136,7 @@ type Mesh coordinates attributes
     | MeshWithNormals (BoundingBox3d Meters coordinates) (TriangularMesh { position : Point3d Meters coordinates, normal : Vector3d Unitless coordinates }) (WebGL.Mesh VertexWithNormal) BackFaceSetting
     | MeshWithUvs (BoundingBox3d Meters coordinates) (TriangularMesh { position : Point3d Meters coordinates, uv : ( Float, Float ) }) (WebGL.Mesh VertexWithUv) BackFaceSetting
     | MeshWithNormalsAndUvs (BoundingBox3d Meters coordinates) (TriangularMesh { position : Point3d Meters coordinates, normal : Vector3d Unitless coordinates, uv : ( Float, Float ) }) (WebGL.Mesh VertexWithNormalAndUv) BackFaceSetting
-    | MeshWithTangents (BoundingBox3d Meters coordinates) (TriangularMesh { position : Point3d Meters coordinates, normal : Vector3d Unitless coordinates, uv : ( Float, Float ), tangent : Vector3d Unitless coordinates }) (WebGL.Mesh VertexWithTangent) BackFaceSetting
+    | MeshWithTangents (BoundingBox3d Meters coordinates) (TriangularMesh { position : Point3d Meters coordinates, normal : Vector3d Unitless coordinates, uv : ( Float, Float ), tangent : Vector3d Unitless coordinates, tangentBasisIsRightHanded : Bool }) (WebGL.Mesh VertexWithTangent) BackFaceSetting
     | LineSegments (BoundingBox3d Meters coordinates) (List (LineSegment3d Meters coordinates)) (WebGL.Mesh PlainVertex)
     | Polyline (BoundingBox3d Meters coordinates) (Polyline3d Meters coordinates) (WebGL.Mesh PlainVertex)
     | Points (BoundingBox3d Meters coordinates) Float (List (Point3d Meters coordinates)) (WebGL.Mesh PlainVertex)
@@ -157,7 +169,8 @@ type alias DrawFunction lights =
 
 type Node
     = EmptyNode
-    | MeshNode Bounds (DrawFunction ( LightMatrices, Vec4 ))
+    | OpaqueMeshNode Bounds (DrawFunction ( LightMatrices, Vec4 ))
+    | TransparentMeshNode Bounds (DrawFunction ( LightMatrices, Vec4 ))
     | ShadowNode (DrawFunction Mat4)
     | PointNode Bounds (DrawFunction ( LightMatrices, Vec4 ))
     | Group (List Node)
@@ -173,11 +186,11 @@ type Chromaticity
 
 
 type CieXyz units
-    = CieXyz Float Float Float
+    = CieXyz Float Float Float Float
 
 
 type LinearRgb units
-    = LinearRgb Vec3
+    = LinearRgb Vec4
 
 
 type Light coordinates castsShadows

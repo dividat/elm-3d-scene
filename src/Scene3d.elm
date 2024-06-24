@@ -1,8 +1,8 @@
 module Scene3d exposing
     ( unlit, cloudy, sunny, custom
     , Entity
-    , point, lineSegment, triangle, facet, quad, block, sphere, cylinder, cone
-    , triangleWithShadow, facetWithShadow, quadWithShadow, blockWithShadow, sphereWithShadow, cylinderWithShadow, coneWithShadow
+    , point, lineSegment, triangle, facet, quad, block, sphere, normalMappedSphere, cylinder, cone
+    , triangleWithShadow, facetWithShadow, quadWithShadow, blockWithShadow, sphereWithShadow, normalMappedSphereWithShadow, cylinderWithShadow, coneWithShadow
     , mesh, meshWithShadow
     , group, nothing
     , rotateAround, translateBy, translateIn, scaleAbout, mirrorAcross
@@ -68,7 +68,7 @@ For up to a few dozen individual entities (points, line segments, triangles etc)
 it should be fine to use these convenience functions, but for much more than
 that you will likely want to switch to using a proper mesh for efficiency.
 
-@docs point, lineSegment, triangle, facet, quad, block, sphere, cylinder, cone
+@docs point, lineSegment, triangle, facet, quad, block, sphere, normalMappedSphere, cylinder, cone
 
 
 ## Shapes with shadows
@@ -78,7 +78,7 @@ but make the given object cast a shadow (or perhaps multiple shadows, if there
 are multiple shadow-casting lights in the scene). Note that no shadows will
 appear if there are no shadow-casting lights!
 
-@docs triangleWithShadow, facetWithShadow, quadWithShadow, blockWithShadow, sphereWithShadow, cylinderWithShadow, coneWithShadow
+@docs triangleWithShadow, facetWithShadow, quadWithShadow, blockWithShadow, sphereWithShadow, normalMappedSphereWithShadow, cylinderWithShadow, coneWithShadow
 
 
 ## Meshes
@@ -329,11 +329,12 @@ four vertices in counterclockwise order.
 
 Normal vectors will be automatically computed at each vertex which are
 perpendicular to the two adjoining edges. (The four vertices should usually
-be coplanar, in which case all normal vectors will be the same.) The four
-vertices will also be given the UV (texture) coordinates (0,0), (1,0), (1,1)
-and (0,1) respectively; this means that if you specify vertices counterclockwise
-from the bottom left corner of a rectangle, a texture will map onto the
-rectangle basically the way you would expect:
+be coplanar, in which case all normal vectors will be the same.)
+
+The four vertices will also be given the UV (texture) coordinates (0,0), (1,0),
+(1,1) and (0,1) respectively; this means that if you specify vertices
+counterclockwise from the bottom left corner of a rectangle, a texture will map
+onto the rectangle basically the way you would expect:
 
 ![Textured quad](https://ianmackenzie.github.io/elm-3d-scene/images/1.0.0/textured-quad.png)
 
@@ -392,13 +393,27 @@ Note that this projection, while simple, means that the texture used will get
 -}
 sphere : Material.Textured coordinates -> Sphere3d Meters coordinates -> Entity coordinates
 sphere givenMaterial givenSphere =
-    Entity.sphere True False givenMaterial givenSphere
+    normalMappedSphere (Material.textured givenMaterial) givenSphere
 
 
 {-| ![Sphere with shadows](https://ianmackenzie.github.io/elm-3d-scene/images/1.0.0/sphere-with-shadows.png)
 -}
 sphereWithShadow : Material.Textured coordinates -> Sphere3d Meters coordinates -> Entity coordinates
 sphereWithShadow givenMaterial givenSphere =
+    normalMappedSphereWithShadow (Material.textured givenMaterial) givenSphere
+
+
+{-| Like `sphere`, but can accept a normal-mapped material.
+-}
+normalMappedSphere : Material.Bumpy coordinates -> Sphere3d Meters coordinates -> Entity coordinates
+normalMappedSphere givenMaterial givenSphere =
+    Entity.sphere True False givenMaterial givenSphere
+
+
+{-| Like `sphereWithShadow`, but can accept a normal-mapped material.
+-}
+normalMappedSphereWithShadow : Material.Bumpy coordinates -> Sphere3d Meters coordinates -> Entity coordinates
+normalMappedSphereWithShadow givenMaterial givenSphere =
     Entity.sphere True True givenMaterial givenSphere
 
 
@@ -522,8 +537,8 @@ To render an object with a shadow, you would generally do something like:
 
     entity =
         Scene3d.meshWithShadow
-            objectMesh
             objectMaterial
+            objectMesh
             objectShadow
 
 -}
@@ -947,7 +962,8 @@ type alias RenderPass lights =
 
 
 type alias RenderPasses =
-    { meshes : List (RenderPass ( LightMatrices, Vec4 ))
+    { opaqueMeshes : List (RenderPass ( LightMatrices, Vec4 ))
+    , transparentMeshes : List (RenderPass ( LightMatrices, Vec4 ))
     , shadows : List (RenderPass Mat4)
     , points : List (RenderPass ( LightMatrices, Vec4 ))
     }
@@ -994,7 +1010,7 @@ collectRenderPasses sceneProperties viewMatrix projectionMatrix currentTransform
                 childNode
                 accumulated
 
-        MeshNode _ meshDrawFunction ->
+        OpaqueMeshNode _ meshDrawFunction ->
             let
                 updatedMeshes =
                     createRenderPass
@@ -1003,9 +1019,27 @@ collectRenderPasses sceneProperties viewMatrix projectionMatrix currentTransform
                         projectionMatrix
                         currentTransformation
                         meshDrawFunction
-                        :: accumulated.meshes
+                        :: accumulated.opaqueMeshes
             in
-            { meshes = updatedMeshes
+            { opaqueMeshes = updatedMeshes
+            , transparentMeshes = accumulated.transparentMeshes
+            , shadows = accumulated.shadows
+            , points = accumulated.points
+            }
+
+        TransparentMeshNode _ meshDrawFunction ->
+            let
+                updatedMeshes =
+                    createRenderPass
+                        sceneProperties
+                        viewMatrix
+                        projectionMatrix
+                        currentTransformation
+                        meshDrawFunction
+                        :: accumulated.transparentMeshes
+            in
+            { opaqueMeshes = accumulated.opaqueMeshes
+            , transparentMeshes = updatedMeshes
             , shadows = accumulated.shadows
             , points = accumulated.points
             }
@@ -1021,7 +1055,8 @@ collectRenderPasses sceneProperties viewMatrix projectionMatrix currentTransform
                         pointDrawFunction
                         :: accumulated.points
             in
-            { meshes = accumulated.meshes
+            { opaqueMeshes = accumulated.opaqueMeshes
+            , transparentMeshes = accumulated.transparentMeshes
             , shadows = accumulated.shadows
             , points = updatedPoints
             }
@@ -1037,7 +1072,8 @@ collectRenderPasses sceneProperties viewMatrix projectionMatrix currentTransform
                         shadowDrawFunction
                         :: accumulated.shadows
             in
-            { meshes = accumulated.meshes
+            { opaqueMeshes = accumulated.opaqueMeshes
+            , transparentMeshes = accumulated.transparentMeshes
             , shadows = updatedShadows
             , points = accumulated.points
             }
@@ -1054,23 +1090,24 @@ collectRenderPasses sceneProperties viewMatrix projectionMatrix currentTransform
                 childNodes
 
 
-commonSettings : List WebGL.Settings.Setting
-commonSettings =
-    [ Blend.custom
-        { r = 0
-        , g = 0
-        , b = 0
-        , a = 0
-        , color = Blend.customAdd Blend.srcAlpha Blend.oneMinusSrcAlpha
-        , alpha = Blend.customAdd Blend.one Blend.oneMinusSrcAlpha
-        }
-    , WebGL.Settings.sampleAlphaToCoverage
-    ]
+defaultBlend : WebGL.Settings.Setting
+defaultBlend =
+    Blend.add Blend.one Blend.oneMinusSrcAlpha
 
 
 depthTestDefault : List WebGL.Settings.Setting
 depthTestDefault =
-    DepthTest.default :: commonSettings
+    [ DepthTest.default, defaultBlend ]
+
+
+writeDepth : List WebGL.Settings.Setting
+writeDepth =
+    [ DepthTest.default, defaultBlend, WebGL.Settings.colorMask False False False False ]
+
+
+depthTestEqual : List WebGL.Settings.Setting
+depthTestEqual =
+    [ DepthTest.equal { write = True, near = 0, far = 1 }, defaultBlend ]
 
 
 outsideStencil : List WebGL.Settings.Setting
@@ -1185,7 +1222,14 @@ getViewBounds viewFrame scale current nodes =
                 Types.EmptyNode ->
                     getViewBounds viewFrame scale current rest
 
-                Types.MeshNode modelBounds _ ->
+                Types.OpaqueMeshNode modelBounds _ ->
+                    let
+                        updated =
+                            updateViewBounds viewFrame scale modelBounds current
+                    in
+                    getViewBounds viewFrame scale updated rest
+
+                Types.TransparentMeshNode modelBounds _ ->
                     let
                         updated =
                             updateViewBounds viewFrame scale modelBounds current
@@ -1502,9 +1546,9 @@ toWebGLEntities arguments =
                         , m22 = eyePointOrDirectionToCamera.y
                         , m32 = eyePointOrDirectionToCamera.z
                         , m42 = projectionType
-                        , m13 = Math.Vector3.getX referenceWhite
-                        , m23 = Math.Vector3.getY referenceWhite
-                        , m33 = Math.Vector3.getZ referenceWhite
+                        , m13 = Math.Vector4.getX referenceWhite
+                        , m23 = Math.Vector4.getY referenceWhite
+                        , m33 = Math.Vector4.getZ referenceWhite
                         , m43 = 0
                         , m14 = arguments.supersampling
                         , m24 = Length.inMeters sceneDiameter
@@ -1522,7 +1566,8 @@ toWebGLEntities arguments =
                         projectionMatrix
                         Transformation.identity
                         rootNode
-                        { meshes = []
+                        { opaqueMeshes = []
+                        , transparentMeshes = []
                         , shadows = []
                         , points = []
                         }
@@ -1530,26 +1575,38 @@ toWebGLEntities arguments =
             case arguments.lights of
                 SingleUnshadowedPass lightMatrices ->
                     List.concat
-                        [ call renderPasses.meshes ( lightMatrices, allLightsEnabled ) depthTestDefault
+                        [ call renderPasses.opaqueMeshes ( lightMatrices, allLightsEnabled ) depthTestDefault
+                        , call renderPasses.transparentMeshes ( lightMatrices, allLightsEnabled ) (Entity.cullFrontFaceSetting :: writeDepth)
+                        , call renderPasses.transparentMeshes ( lightMatrices, allLightsEnabled ) (Entity.cullFrontFaceSetting :: depthTestEqual)
+                        , call renderPasses.transparentMeshes ( lightMatrices, allLightsEnabled ) (Entity.cullBackFaceSetting :: writeDepth)
+                        , call renderPasses.transparentMeshes ( lightMatrices, allLightsEnabled ) (Entity.cullBackFaceSetting :: depthTestEqual)
                         , call renderPasses.points lightingDisabled depthTestDefault
                         ]
 
                 SingleShadowedPass lightMatrices ->
                     List.concat
-                        [ call renderPasses.meshes lightingDisabled depthTestDefault
+                        [ call renderPasses.opaqueMeshes lightingDisabled depthTestDefault
                         , [ initStencil ]
                         , call renderPasses.shadows lightMatrices.lights12 createShadowStencil
                         , [ storeStencilValue 0 ]
-                        , call renderPasses.meshes ( lightMatrices, allLightsEnabled ) outsideStencil
+                        , call renderPasses.opaqueMeshes ( lightMatrices, allLightsEnabled ) outsideStencil
+                        , call renderPasses.transparentMeshes ( lightMatrices, allLightsEnabled ) (Entity.cullFrontFaceSetting :: writeDepth)
+                        , call renderPasses.transparentMeshes ( lightMatrices, allLightsEnabled ) (Entity.cullFrontFaceSetting :: depthTestEqual)
+                        , call renderPasses.transparentMeshes ( lightMatrices, allLightsEnabled ) (Entity.cullBackFaceSetting :: writeDepth)
+                        , call renderPasses.transparentMeshes ( lightMatrices, allLightsEnabled ) (Entity.cullBackFaceSetting :: depthTestEqual)
                         , call renderPasses.points lightingDisabled depthTestDefault
                         ]
 
                 MultiplePasses shadowCasters allLightMatrices ->
                     List.concat
-                        [ call renderPasses.meshes ( allLightMatrices, allLightsEnabled ) depthTestDefault
+                        [ call renderPasses.opaqueMeshes ( allLightMatrices, allLightsEnabled ) depthTestDefault
                         , [ initStencil ]
                         , createShadows renderPasses.shadows shadowCasters
-                        , renderWithinShadows renderPasses.meshes allLightMatrices (List.length shadowCasters)
+                        , renderWithinShadows renderPasses.opaqueMeshes allLightMatrices (List.length shadowCasters)
+                        , call renderPasses.transparentMeshes ( allLightMatrices, allLightsEnabled ) (Entity.cullFrontFaceSetting :: writeDepth)
+                        , call renderPasses.transparentMeshes ( allLightMatrices, allLightsEnabled ) (Entity.cullFrontFaceSetting :: depthTestEqual)
+                        , call renderPasses.transparentMeshes ( allLightMatrices, allLightsEnabled ) (Entity.cullBackFaceSetting :: writeDepth)
+                        , call renderPasses.transparentMeshes ( allLightMatrices, allLightsEnabled ) (Entity.cullBackFaceSetting :: depthTestEqual)
                         , call renderPasses.points lightingDisabled depthTestDefault
                         ]
 
