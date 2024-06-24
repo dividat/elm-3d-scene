@@ -72,7 +72,7 @@ needed.
 The functions in this module all return values with a 'free' type parameter -
 for example, the return type of `Material.matte` is
 
-    Material coordinates { a | normals : () }
+    Material coordinates { a | normals = () }
 
 This makes most code simpler (it means that such a material can work with _any_
 kind of mesh that has normal vectors, even if for example that mesh also has
@@ -89,7 +89,7 @@ aliases. For example, the material above might be stored as a
 
 Then, if you need to turn this value _back_ into a
 
-    Material coordinates { a | normals : () }
+    Material coordinates { a | normals = () }
 
 (so that you could apply it to a textured mesh, for example) you can use
 `Material.uniform` to do so. You can think of `Material.uniform material` as
@@ -307,6 +307,7 @@ loadWith options url =
             )
 
 
+{-| -}
 loadNormalMapWith : { format : NormalMapFormat, options : WebGL.Texture.Options } -> String -> Task WebGL.Texture.Error NormalMap
 loadNormalMapWith { format, options } url =
     WebGL.Texture.loadWith options url
@@ -321,11 +322,19 @@ loadNormalMapWith { format, options } url =
             )
 
 
+{-| A `NormalMapFormat` value represents the format of a normal map texture. This
+is used to specify how the normal map texture should be interpreted by the
+renderer. The two most common formats are `openglFormat` and `directxFormat`,
+-}
 openglFormat : NormalMapFormat
 openglFormat =
     Types.OpenglFormat
 
 
+{-| A `NormalMapFormat` value represents the format of a normal map texture. This
+is used to specify how the normal map texture should be interpreted by the
+renderer. The two most common formats are `openglFormat` and `directxFormat`,
+-}
 directxFormat : NormalMapFormat
 directxFormat =
     Types.DirectxFormat
@@ -551,24 +560,44 @@ texturedPbr { baseColor, roughness, metallic } =
         Types.NoNormalMap
 
 
+{-| -}
 type alias NormalMap =
     Types.NormalMap
 
 
+{-| -}
 type alias NormalMapFormat =
     Types.NormalMapFormat
 
 
+{-| A `NormalMap` value represents a texture that is used to perturb the normal
+vectors of a surface. This can be used to simulate fine surface details that
+would be too expensive to model in the geometry itself. Normal maps are usually
+stored as RGB images, with the red, green and blue channels representing the
+X, Y and Z components of the perturbed normal vector at each point on the
+surface.
+-}
 noNormalMap : NormalMap
 noNormalMap =
     Types.NoNormalMap
 
 
+{-| Load a normal map texture from a given URL. The resulting value can be used
+as a `NormalMap` in a material. Normal maps are usually stored as RGB images,
+with the red, green and blue channels representing the X, Y and Z components of
+the perturbed normal vector at each point on the surface.
+
+The loaded normal map will use [trilinear texture filtering](#trilinearFiltering).
+To use nearest-neighbor filtering, bilinear filtering or to customize other
+texture options, use [`loadNormalMapWith`](#loadNormalMapWith) instead.
+
+-}
 loadNormalMap : String -> Task WebGL.Texture.Error NormalMap
 loadNormalMap url =
     loadNormalMapWith { format = openglFormat, options = trilinearFiltering } url
 
 
+{-| -}
 bumpyMatte : Texture Color -> Texture Float -> NormalMap -> Bumpy coordinates
 bumpyMatte colorTexture ambientOcclusionTexture normalMapTexture =
     Types.LambertianMaterial Types.UseMeshUvs
@@ -577,6 +606,7 @@ bumpyMatte colorTexture ambientOcclusionTexture normalMapTexture =
         normalMapTexture
 
 
+{-| -}
 bumpyMetal :
     { baseColor : Texture Color
     , roughness : Texture Float
@@ -594,6 +624,7 @@ bumpyMetal { baseColor, roughness, ambientOcclusion, normalMap } =
         }
 
 
+{-| -}
 bumpyNonmetal :
     { baseColor : Texture Color
     , roughness : Texture Float
@@ -611,6 +642,7 @@ bumpyNonmetal { baseColor, roughness, ambientOcclusion, normalMap } =
         }
 
 
+{-| -}
 bumpyPbr :
     { baseColor : Texture Color
     , roughness : Texture Float
@@ -661,6 +693,7 @@ type alias Anisotropic coordinates =
     Material coordinates { normals : (), tangents : () }
 
 
+{-| -}
 type alias Bumpy coordinates =
     Material coordinates { normals : (), uvs : (), tangents : () }
 
