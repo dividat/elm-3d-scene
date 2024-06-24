@@ -1,5 +1,8 @@
 # FORK of [Ian Mackenzie's elm-3d-scene](https://github.com/ianmackenzie/elm-3d-scene)
 
+> [!NOTE]
+> This is a fork containing unreleased features of elm-3d-scene that have not yet been fully tested/documented/finalized!
+
 `elm-3d-scene` is a high-level Elm package for producing 3D graphics, with
 support for lighting, shadows and realistic materials:
 
