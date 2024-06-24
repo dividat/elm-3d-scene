@@ -1,9 +1,9 @@
 {
   "type": "package",
-  "name": "ianmackenzie/elm-3d-scene",
-  "summary": "3D rendering engine for Elm",
+  "name": "dividat/elm-3d-scene",
+  "summary": "FORK of ianmackenzie's elm-3d-scene 3D rendering engine for Elm",
   "license": "MPL-2.0",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "exposed-modules": [
     "Scene3d",
     "Scene3d.Material",

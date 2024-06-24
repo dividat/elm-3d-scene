@@ -1,4 +1,4 @@
-# elm-3d-scene
+# FORK of [Ian Mackenzie's elm-3d-scene](https://github.com/ianmackenzie/elm-3d-scene)
 
 `elm-3d-scene` is a high-level Elm package for producing 3D graphics, with
 support for lighting, shadows and realistic materials:
@@ -49,19 +49,19 @@ is your friend.
 One important point to understand is that `elm-3d-scene` builds heavily on
 several other packages, making extensive use of types and modules from:
 
-  - [`avh4/elm-color`](https://package.elm-lang.org/packages/avh4/elm-color/latest/):
-    `Color`
-  - [`ianmackenzie/elm-3d-camera`](https://package.elm-lang.org/packages/ianmackenzie/elm-3d-camera/latest/):
-    `Camera3d` and `Viewpoint3d`
-  - [`ianmackenzie/elm-units`](https://package.elm-lang.org/packages/ianmackenzie/elm-units/latest/):
-    `Quantity`, `Length`, `Meters`, `Angle`, `Pixels`, `Luminance`, `Illuminance`,
-    `LuminousFlux` and `Temperature`
-  - [`ianmackenzie/elm-triangular-mesh`](https://package.elm-lang.org/packages/ianmackenzie/elm-triangular-mesh/latest/):
-    `TriangularMesh`
-  - [`ianmackenzie/elm-geometry`](https://package.elm-lang.org/packages/ianmackenzie/elm-geometry/latest/):
-    `Point3d`, `Vector3d`, `Direction3d`, `LineSegment3d`, `Triangle3d`,
-    `Sphere3d`, `Block3d`, `Axis3d`...basically anything ending in `3d` other
-    than `Camera3d` and `Viewpoint3d` =)
+- [`avh4/elm-color`](https://package.elm-lang.org/packages/avh4/elm-color/latest/):
+  `Color`
+- [`ianmackenzie/elm-3d-camera`](https://package.elm-lang.org/packages/ianmackenzie/elm-3d-camera/latest/):
+  `Camera3d` and `Viewpoint3d`
+- [`ianmackenzie/elm-units`](https://package.elm-lang.org/packages/ianmackenzie/elm-units/latest/):
+  `Quantity`, `Length`, `Meters`, `Angle`, `Pixels`, `Luminance`, `Illuminance`,
+  `LuminousFlux` and `Temperature`
+- [`ianmackenzie/elm-triangular-mesh`](https://package.elm-lang.org/packages/ianmackenzie/elm-triangular-mesh/latest/):
+  `TriangularMesh`
+- [`ianmackenzie/elm-geometry`](https://package.elm-lang.org/packages/ianmackenzie/elm-geometry/latest/):
+  `Point3d`, `Vector3d`, `Direction3d`, `LineSegment3d`, `Triangle3d`,
+  `Sphere3d`, `Block3d`, `Axis3d`...basically anything ending in `3d` other
+  than `Camera3d` and `Viewpoint3d` =)
 
 As a result, to start using `elm-3d-scene` in your own project you will need at
 least a decent understanding of those packages as well. Check out their READMEs
@@ -151,12 +151,12 @@ useful at this stage:
   into `elm-3d-scene`, such as [OBJ](https://en.wikipedia.org/wiki/Wavefront_.obj_file),
   [STL](https://en.wikipedia.org/wiki/STL_%28file_format%29) or [DAE](https://en.wikipedia.org/wiki/COLLADA).
 
-  I think it makes sense for each file format to have a dedicated package 
+  I think it makes sense for each file format to have a dedicated package
   separate from `elm-3d-scene`. Ideally, I think each package should focus on
   simply parsing a file into a nice Elm data structure (instead of directly into
   an `elm-3d-scene` `Entity`, for example) so that the data could also be used
   in other ways (custom rendering engines, 3D printing, analysis etc.).
-  
+
   Note that some work has already started on [GLTF](https://en.wikipedia.org/wiki/GlTF)
   loading, so reach out to me (**@ianmackenzie**) on the [Elm Slack](http://elmlang.herokuapp.com/)
   if that's something you're interested in working on.
