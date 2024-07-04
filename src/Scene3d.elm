@@ -5,7 +5,7 @@ module Scene3d exposing
     , triangleWithShadow, facetWithShadow, quadWithShadow, blockWithShadow, sphereWithShadow, normalMappedSphereWithShadow, cylinderWithShadow, coneWithShadow
     , mesh, meshWithShadow
     , group, nothing
-    , rotateAround, translateBy, translateIn, scaleAbout, mirrorAcross
+    , rotateAround, translateBy, translateIn, scaleAbout, scaleAboutXYZ, mirrorAcross
     , Background, transparentBackground, backgroundColor
     , Antialiasing
     , noAntialiasing, multisampling, supersampling
@@ -109,7 +109,7 @@ entity:
 
 ![Duckling with no transformation](https://ianmackenzie.github.io/elm-3d-scene/images/1.0.0/duckling-original.png)
 
-@docs rotateAround, translateBy, translateIn, scaleAbout, mirrorAcross
+@docs rotateAround, translateBy, translateIn, scaleAbout, scaleAboutXYZ, mirrorAcross
 
 
 # Background
@@ -613,6 +613,22 @@ scaleAbout centerPoint scale entity =
     Entity.scaleAbout centerPoint scale entity
 
 
+{-| Scale an entity about a given point by a given scale. The given point will
+remain fixed in place and all other points on the entity will be stretched away
+from that point (or contract towards that point, if the scale is less than one).
+
+![Scaled duckling](https://ianmackenzie.github.io/elm-3d-scene/images/1.0.0/duckling-scaled.png)
+
+`elm-3d-scene` tries very hard to do the right thing here even if you use a
+_negative_ scale factor, but that flips the mesh inside out so I don't really
+recommend it.
+
+-}
+scaleAboutXYZ : Point3d Meters coordinates -> { x : Float, y : Float, z : Float } -> Entity coordinates -> Entity coordinates
+scaleAboutXYZ centerPoint scale entity =
+    Entity.scaleAboutXYZ centerPoint scale entity
+
+
 {-| Mirror an entity across a plane.
 
 ![Mirrored duckling](https://ianmackenzie.github.io/elm-3d-scene/images/1.0.0/duckling-mirrored.png)
@@ -981,9 +997,9 @@ createRenderPass sceneProperties viewMatrix projectionMatrix transformation draw
 
         modelScale =
             Math.Vector4.vec4
-                transformation.scale
-                transformation.scale
-                transformation.scale
+                transformation.scaleX
+                transformation.scaleY
+                transformation.scaleZ
                 normalSign
     in
     drawFunction
@@ -1159,7 +1175,7 @@ call renderPasses lights settings =
     List.map (\renderPass -> renderPass lights settings) renderPasses
 
 
-updateViewBounds : Frame3d Meters modelCoordinates { defines : viewCoordinates } -> Float -> Bounds -> Maybe (BoundingBox3d Meters viewCoordinates) -> Maybe (BoundingBox3d Meters viewCoordinates)
+updateViewBounds : Frame3d Meters modelCoordinates { defines : viewCoordinates } -> { x : Float, y : Float, z : Float } -> Bounds -> Maybe (BoundingBox3d Meters viewCoordinates) -> Maybe (BoundingBox3d Meters viewCoordinates)
 updateViewBounds viewFrame scale modelBounds current =
     let
         i =
@@ -1175,22 +1191,22 @@ updateViewBounds viewFrame scale modelBounds current =
             modelBounds.centerPoint
 
         modelCenterX =
-            originalCenter.x * scale
+            originalCenter.x * scale.x
 
         modelCenterY =
-            originalCenter.y * scale
+            originalCenter.y * scale.y
 
         modelCenterZ =
-            originalCenter.z * scale
+            originalCenter.z * scale.z
 
         modelXDimension =
-            2 * modelBounds.halfX * scale
+            2 * modelBounds.halfX * scale.x
 
         modelYDimension =
-            2 * modelBounds.halfY * scale
+            2 * modelBounds.halfY * scale.y
 
         modelZDimension =
-            2 * modelBounds.halfZ * scale
+            2 * modelBounds.halfZ * scale.z
 
         xDimension =
             abs (modelXDimension * i.x) + abs (modelYDimension * i.y) + abs (modelZDimension * i.z)
@@ -1214,7 +1230,7 @@ updateViewBounds viewFrame scale modelBounds current =
             Just nodeBounds
 
 
-getViewBounds : Frame3d Meters modelCoordinates { defines : viewCoordinates } -> Float -> Maybe (BoundingBox3d Meters viewCoordinates) -> List Node -> Maybe (BoundingBox3d Meters viewCoordinates)
+getViewBounds : Frame3d Meters modelCoordinates { defines : viewCoordinates } -> { x : Float, y : Float, z : Float } -> Maybe (BoundingBox3d Meters viewCoordinates) -> List Node -> Maybe (BoundingBox3d Meters viewCoordinates)
 getViewBounds viewFrame scale current nodes =
     case nodes of
         first :: rest ->
@@ -1256,7 +1272,10 @@ getViewBounds viewFrame scale current nodes =
                 Types.Transformed transformation childNode ->
                     let
                         localScale =
-                            scale * transformation.scale
+                            { x = scale.x * transformation.scaleX
+                            , y = scale.y * transformation.scaleY
+                            , z = scale.z * transformation.scaleZ
+                            }
 
                         localViewFrame =
                             viewFrame
@@ -1443,7 +1462,7 @@ toWebGLEntities arguments =
                 , zDirection = Direction3d.reverse (Viewpoint3d.viewDirection viewpoint)
                 }
     in
-    case getViewBounds viewFrame 1 Nothing [ rootNode ] of
+    case getViewBounds viewFrame { x = 1, y = 1, z = 1 } Nothing [ rootNode ] of
         Nothing ->
             -- Empty view bounds means there's nothing to render!
             []

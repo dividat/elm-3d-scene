@@ -153,7 +153,13 @@ view model =
 
         -- Rotate the initial cube around the rotation axis by the current angle
         rotatedCube =
-            initialCube |> Scene3d.rotateAround rotationAxis model.angle
+            initialCube
+                |> Scene3d.scaleAboutXYZ Point3d.origin
+                    { x = 1
+                    , y = 1.5
+                    , z = 0.5
+                    }
+                |> Scene3d.rotateAround rotationAxis model.angle
 
         -- Create an isometric camera
         camera =
@@ -161,7 +167,7 @@ view model =
                 { viewpoint =
                     Viewpoint3d.isometric
                         { focalPoint = Point3d.origin
-                        , distance = Length.cssPixels 100
+                        , distance = Length.cssPixels 400
                         }
                 , viewportHeight = Length.cssPixels 32
                 }

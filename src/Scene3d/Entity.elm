@@ -16,6 +16,7 @@ module Scene3d.Entity exposing
     , relativeTo
     , rotateAround
     , scaleAbout
+    , scaleAboutXYZ
     , shadow
     , sphere
     , translateBy
@@ -2239,6 +2240,11 @@ placeIn frame givenDrawable =
 scaleAbout : Point3d Meters coordinates -> Float -> Entity coordinates -> Entity coordinates
 scaleAbout centerPoint scale givenDrawable =
     transformBy (Transformation.scaleAbout centerPoint scale) givenDrawable
+
+
+scaleAboutXYZ : Point3d Meters coordinates -> { x : Float, y : Float, z : Float } -> Entity coordinates -> Entity coordinates
+scaleAboutXYZ centerPoint scale givenDrawable =
+    transformBy (Transformation.scaleAboutXYZ centerPoint scale) givenDrawable
 
 
 premultiplyColor : Vec4 -> Vec4

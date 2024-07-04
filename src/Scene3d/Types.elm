@@ -38,7 +38,9 @@ type alias Transformation =
     , px : Float
     , py : Float
     , pz : Float
-    , scale : Float
+    , scaleX : Float
+    , scaleY : Float
+    , scaleZ : Float
     , isRightHanded : Bool
     }
 
@@ -111,6 +113,7 @@ type Texture value
         { url : String
         , options : WebGL.Texture.Options
         , data : WebGL.Texture.Texture
+
         -- TODO: transparency here
         }
 

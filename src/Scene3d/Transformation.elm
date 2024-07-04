@@ -9,6 +9,7 @@ module Scene3d.Transformation exposing
     , relativeTo
     , rotateAround
     , scaleAbout
+    , scaleAboutXYZ
     , translateBy
     )
 
@@ -95,7 +96,9 @@ identity =
     , px = 0
     , py = 0
     , pz = 0
-    , scale = 1
+    , scaleX = 1
+    , scaleY = 1
+    , scaleZ = 1
     , isRightHanded = True
     }
 
@@ -118,7 +121,9 @@ translateBy displacement =
     , px = v.x
     , py = v.y
     , pz = v.z
-    , scale = 1
+    , scaleX = 1
+    , scaleY = 1
+    , scaleZ = 1
     , isRightHanded = True
     }
 
@@ -144,8 +149,44 @@ scaleAbout point k =
     , px = oneMinusK * p.x
     , py = oneMinusK * p.y
     , pz = oneMinusK * p.z
-    , scale = k
+    , scaleX = k
+    , scaleY = k
+    , scaleZ = k
     , isRightHanded = k >= 0
+    }
+
+
+scaleAboutXYZ : Point3d Meters coordinates -> { x : Float, y : Float, z : Float } -> Transformation
+scaleAboutXYZ point k =
+    let
+        p =
+            Point3d.unwrap point
+
+        oneMinusKX =
+            1 - k.x
+
+        oneMinusKY =
+            1 - k.y
+
+        oneMinusKZ =
+            1 - k.z
+    in
+    { ix = 1
+    , iy = 0
+    , iz = 0
+    , jx = 0
+    , jy = 1
+    , jz = 0
+    , kx = 0
+    , ky = 0
+    , kz = 1
+    , px = oneMinusKX * p.x
+    , py = oneMinusKY * p.y
+    , pz = oneMinusKZ * p.z
+    , scaleX = k.x
+    , scaleY = k.y
+    , scaleZ = k.z
+    , isRightHanded = True
     }
 
 
@@ -242,7 +283,9 @@ rotateAround axis (Quantity angle) =
     , px = p0.x - a00 * p0.x - a01 * p0.y - a02 * p0.z
     , py = p0.y - a10 * p0.x - a11 * p0.y - a12 * p0.z
     , pz = p0.z - a20 * p0.x - a21 * p0.y - a22 * p0.z
-    , scale = 1
+    , scaleX = 1
+    , scaleY = 1
+    , scaleZ = 1
     , isRightHanded = True
     }
 
@@ -286,7 +329,9 @@ mirrorAcross plane =
     , px = p0.x - a00 * p0.x - a01 * p0.y - a02 * p0.z
     , py = p0.y - a01 * p0.x - a11 * p0.y - a12 * p0.z
     , pz = p0.z - a02 * p0.x - a12 * p0.y - a22 * p0.z
-    , scale = 1
+    , scaleX = 1
+    , scaleY = 1
+    , scaleZ = 1
     , isRightHanded = False
     }
 
@@ -318,7 +363,9 @@ relativeTo frame =
     , px = -p0.x * i.x - p0.y * i.y - p0.z * i.z
     , py = -p0.x * j.x - p0.y * j.y - p0.z * j.z
     , pz = -p0.x * k.x - p0.y * k.y - p0.z * k.z
-    , scale = 1
+    , scaleX = 1
+    , scaleY = 1
+    , scaleZ = 1
     , isRightHanded = Frame3d.isRightHanded frame
     }
 
@@ -350,7 +397,9 @@ placeIn frame =
     , px = p0.x
     , py = p0.y
     , pz = p0.z
-    , scale = 1
+    , scaleX = 1
+    , scaleY = 1
+    , scaleZ = 1
     , isRightHanded = Frame3d.isRightHanded frame
     }
 
@@ -367,9 +416,11 @@ compose t1 t2 =
     , kx = t1.kx * t2.ix + t1.ky * t2.jx + t1.kz * t2.kx
     , ky = t1.kx * t2.iy + t1.ky * t2.jy + t1.kz * t2.ky
     , kz = t1.kx * t2.iz + t1.ky * t2.jz + t1.kz * t2.kz
-    , px = t2.px + (t1.px * t2.ix + t1.py * t2.jx + t1.pz * t2.kx) * t2.scale
-    , py = t2.py + (t1.px * t2.iy + t1.py * t2.jy + t1.pz * t2.ky) * t2.scale
-    , pz = t2.pz + (t1.px * t2.iz + t1.py * t2.jz + t1.pz * t2.kz) * t2.scale
-    , scale = t1.scale * t2.scale
+    , px = t2.px + (t1.px * t2.ix + t1.py * t2.jx + t1.pz * t2.kx) * t2.scaleX
+    , py = t2.py + (t1.px * t2.iy + t1.py * t2.jy + t1.pz * t2.ky) * t2.scaleY
+    , pz = t2.pz + (t1.px * t2.iz + t1.py * t2.jz + t1.pz * t2.kz) * t2.scaleZ
+    , scaleX = t1.scaleX * t2.scaleX
+    , scaleY = t1.scaleY * t2.scaleY
+    , scaleZ = t1.scaleZ * t2.scaleZ
     , isRightHanded = t1.isRightHanded == t2.isRightHanded
     }
